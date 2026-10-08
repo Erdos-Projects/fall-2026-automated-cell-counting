@@ -16,15 +16,17 @@ This is a working roadmap. Edit it freely as the team makes decisions. Backgroun
 
 ## 1. Goal and scope
 
-**Headline:** automated Live/Dead cell counting with viability %, built to hold up on images from new sessions, labs, and microscopes.
+**Headline:** a tool that **finds and circles every cell, labels it Live or Dead, and counts them**, built to hold up on images from new sessions, labs, and microscopes.
 
-The tool works like a bird-identification app: find every cell, label each one, then count.
+The tool works like a bird-identification app: find every cell, label each one, then count. **The counts are tallies of the detections**, so every number can be checked against the annotated image. Models that predict a count directly from the whole image are only comparison baselines.
 
 ```
 Input : microscope image (any size or shape)
           ↓
-Detect   : a box around each cell
+Detect   : a box (drawn as a box or circle) around each cell
 Classify : Live or Dead (Dead cells take up the blue trypan stain)
+          ↓
+Count    : tally the detections per class
           ↓
 Output: annotated image + Live: 52 · Dead: 3 · Total: 55 · Viability: 94.5% + quality warnings
 ```
@@ -77,7 +79,7 @@ From `notebooks/01_eda.ipynb`; the short version with figures is [`eda_summary.m
 
 ### Metrics
 
-Exact-match "accuracy" is too strict for counts, so use the following metrics, computed on `splits/splits.csv`:
+Because the tool detects and then counts, we score both steps: **did it find the right cells** (detection), and **are the resulting counts right** (counting). Exact-match "accuracy" is too strict for counts. All metrics are computed on `splits/splits.csv`:
 
 | Metric | Applies to | Why |
 |---|---|---|
@@ -86,7 +88,8 @@ Exact-match "accuracy" is too strict for counts, so use the following metrics, c
 | **±10% accuracy** | Total | Share of images whose count is within 10% of the truth; replaces "accuracy" in the KPIs. |
 | **R²** | Total | Already a KPI. On its own it can hide a systematic bias, so always report it with MAE. |
 | **RMSE, relative error** | Total | Highlight large misses, and make errors comparable between sparse and dense images. |
-| **mAP@0.5** (diagnostic only) | Detectors | Checks whether boxes land on real cells, not just whether the totals happen to match. |
+| **Precision, recall** (IoU ≥ 0.5) | Detectors, per class | **Main detection metrics.** Recall = share of labelled cells found; precision = share of detections that are real cells. A right total can hide misses cancelling false alarms; these can't. |
+| **mAP@0.5** | Detectors | Standard detector score across confidence thresholds; used to compare detectors and tune training. |
 
 Always break results down by **session**, **count bin**, and **class**. A good average can hide failures.
 
@@ -151,15 +154,26 @@ any image
 
 ### 5.3 More varied data (the biggest lever)
 
-Augmentation only stretches the 5 sessions we have. In order of effort:
+Augmentation only stretches the 5 sessions we have. **Public cell datasets can help, if we use them to teach "what is a cell" and keep Live vs Dead from our own data**, since no other set has our Live/Dead labels.
 
-1. **Start from a model already trained on many kinds of cell images.**
-   - Cellpose finds the cells, then a small classifier labels each one Live or Dead from its colour.
-   - Because the Live/Dead difference is mostly colour, this split may transfer to new labs better than one end-to-end model trained on our 5 sessions.
-2. **Add public cell datasets for "what is a cell".**
-   - LIVECell, for example, is large and covers 8 cell types; it has no Live/Dead labels.
-   - Use those datasets only to teach the model what a cell is, and our data only to teach Live vs Dead.
-3. **Per-lab fine-tuning:** a new lab corrects the counts on 5–10 of its own images, and we fine-tune briefly.
+**Recipe** (planned; needs team sign-off before implementation):
+1. **Stage 1, single-class "cell" pretraining** of the detector on a mix of public sets. Convert masks to boxes where needed.
+2. **Stage 2, fine-tune on our 351 training images** with the two classes Live and Dead.
+3. **Ablation:** compare with and without Stage 1 on leave-one-session-out and the stress tests. Keep the extra data only if it helps there, not just on the random split.
+
+| Candidate | Why it helps | Check before use |
+|---|---|---|
+| LIVECell (≈5k phase-contrast images, ≈1.6M cells, COCO masks) | Closest imaging (unstained cultured cells), large, many cell types | Licence (believed CC BY-NC); phase contrast, not brightfield |
+| BCCD (874 images, boxes: RBC, WBC, platelets) | Brightfield, stained, **crowded and overlapping** cells | Small; label quality is uneven |
+| Synthetic Cell Images and Masks (20,400) | Controlled **blur levels** and density | Grayscale and synthetic; for robustness, not realism |
+| Cell-Counting CV Model 2 (531 images, normal/abnormal) | Similar Roboflow brightfield source | **Check for augmented duplicates**, as with our 1,200-image set |
+| CoNIC (histology nuclei) | Dense scenes; the MedGemma comparison (§5.5) | Different modality; evaluation only |
+
+**Rules:** extra data never enters our valid or test splits; each source's licence goes in `data/README.md`; results are always reported on our data.
+
+Other levers, in order of effort:
+- **Start from a model already trained on many kinds of cell images:** Cellpose finds the cells, then a small classifier labels each one Live or Dead from its colour. Because the Live/Dead difference is mostly colour, this split may transfer to new labs better than one end-to-end model.
+- **Per-lab fine-tuning:** a new lab corrects the detections on 5–10 of its own images, and we fine-tune briefly.
 
 ### 5.4 Flag inputs we can't handle
 
@@ -204,10 +218,10 @@ How it fits our project:
 
 ### Phase 2: Baselines
 
-The cheapest baselines come first, so every later model has something to beat. Every result goes into **one table** with the §4 metrics, reported on **both** the random split and leave-one-session-out cross-validation from day one. The gap between the two tells us how much each method relies on recognizing the session.
+The cheapest baselines come first, so every later model has something to beat. Every result goes into **one table** with the §4 metrics, reported on **both** the random split and leave-one-session-out cross-validation from day one. Methods that locate cells (B3, B4, B7) are scored on detection *and* counts; count-only methods (B0–B2, B5, B6) on counts only.
 
 **Setup**
-- [ ] `src/cellcount/metrics.py`: the §4 metrics (Live, Dead, and Total MAE, viability error, ±10% accuracy, R², RMSE), per session and per count bin.
+- [ ] `src/cellcount/metrics.py`: the §4 metrics (detection precision and recall by box matching; Live, Dead, and Total MAE, viability error, ±10% accuracy, R², RMSE), per session and per count bin.
 - [ ] Leave-one-session-out fold helper built on the `source` column of `splits/splits.csv`.
 - [ ] `notebooks/02_baselines.ipynb` writes `outputs/results/baselines.csv`; one row per method × test level.
 - [ ] Optional dependency group for modeling in `pyproject.toml` (torch, cellpose, transformers), so `src/cellcount/` stays importable without them. Development runs locally (Apple silicon, `mps`); Colab for teammates and final runs.
@@ -216,15 +230,16 @@ The cheapest baselines come first, so every later model has something to beat. E
 
 | # | Baseline | Learns from | What it tells us |
 |---|---|---|---|
-| B0 | Training-set mean count | nothing | The floor (R² ≈ 0). |
-| B1 | Session mean count | session label | **Shortcut reference** (R² ≈ 0.72 on the random split; meaningless under leave-one-session-out). Any model near this number may just recognize the session. |
-| B2 | Global image features → ridge regression (edge energy, colour statistics) | 351 images | How far a model gets without finding cells. Edge energy alone tracks count (r = 0.90). |
-| B3 | Classical CV: background subtraction, Otsu threshold, watershed; Live/Dead by blue intensity inside each blob | thresholds tuned on train | A training-free counter. Expect over-counting of faint, unlabelled cells. |
+| B0 | Training-set mean count | nothing | *Sanity reference.* The floor (R² ≈ 0). |
+| B1 | Session mean count | session label | *Sanity reference.* **Shortcut reference** (R² ≈ 0.72 on the random split; meaningless under leave-one-session-out). Any model near this number may just recognize the session. |
+| B2 | Global image features → ridge regression (edge energy, colour statistics) | 351 images | *Sanity reference.* How far a model gets without finding cells. Edge energy alone tracks count (r = 0.90). |
+| B3 | Classical CV: background subtraction, Otsu threshold, watershed; Live/Dead by blue intensity inside each blob | thresholds tuned on train | A training-free detector and counter. Expect over-counting of faint, unlabelled cells. |
 | B4 | Cellpose zero-shot (pretrained, no training) + the same colour rule | nothing | How well a general cell segmenter transfers. Also the starting point for Stretch 1. |
 | B5 | MedGemma prompting (§5.5 A) | nothing | Whether a medical vision-language model can count. |
-| B6 | MedSigLIP frozen features + ridge or MLP head (§5.5 B) | 351 images | The foundation-model learned baseline; watch the leave-one-session-out gap. |
+| B6 | MedSigLIP frozen features + ridge or MLP head (§5.5 B) | 351 images | The foundation-model learned baseline (count only); watch the leave-one-session-out gap. |
+| B7 | YOLO detector, default settings, 2 classes, pretrained weights | our boxes | **First learned detector**, and the starting point for Phase 3. |
 
-- [ ] Error analysis for B3, B4, and B6: worst 10 images per method, and residuals by session and count bin.
+- [ ] Error analysis for B3, B4, B6, and B7 (missed and doubled cells for the detectors): worst 10 images per method, and residuals by session and count bin.
 - [ ] Short write-up: which baselines beat B1 under leave-one-session-out, and what that implies for Phase 3.
 
 ### Phase 3: Core model (Live/Dead detector)
@@ -290,7 +305,7 @@ outputs/         # gitignored; figures, checkpoints, results (on Drive when usin
 - [x] Dataset version → the fork's raw COCO export (500 images).
 - [x] Where do we train? → Google Colab, with data on a shared Drive folder.
 - [x] RGB or grayscale? → **RGB**, because Dead cells are recognized by their blue stain.
-- [ ] Confirm the core scope: a Live/Dead detector with viability %? (proposed in Section 1)
+- [x] Core scope → detect and circle every cell with a Live/Dead label, then count the detections; counts and viability % are tallies (Section 1, decided 2026-10-07).
 - [ ] Which metrics count as success? (proposal: per-class MAE, viability error, ±10% accuracy, R²; see Section 4)
 - [ ] Detector framework: Ultralytics YOLO (proposed) or torchvision Faster R-CNN?
 - [ ] Can anyone get 20–30 images from another lab or microscope for the external test set?
@@ -298,4 +313,5 @@ outputs/         # gitignored; figures, checkpoints, results (on Drive when usin
 - [ ] Agree on the branch and pull-request rules (Section 7).
 - [ ] Adopt the MedGemma track (§5.5) as Stretch 5, with B5 and B6 in the Phase 2 baselines? Who requests Hugging Face access?
 - [ ] CoNIC: use it for total-count evaluation only (proposed), or drop it?
+- [ ] Extra data for Stage 1 "what is a cell" pretraining (§5.3): which candidates to try first (proposal: LIVECell, then BCCD), and who checks their licences?
 - [ ] Headline numbers: report leave-one-session-out as the main result and the random split as secondary (proposed)?
