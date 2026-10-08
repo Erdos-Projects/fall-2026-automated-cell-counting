@@ -18,3 +18,21 @@ from cellcount.data import download_export
 
 download_export(get_secret("ROBOFLOW_EXPORT_URL"), get_paths().data)
 ```
+
+### Why the public version shows ~1,200 images (verified 2026-10-06)
+
+The Universe page's download snippet (`rf.workspace("cell-counting").project("cell-counting-zeqo5").version(1).download("coco")`) fetches the public version 1, not a larger dataset. We downloaded it with `download_roboflow(..., version=1, workspace="cell-counting", project="cell-counting-zeqo5")` and compared it with our raw export by original file name:
+
+| | Public v1 | Our raw export |
+|---|---|---|
+| Images | 1,200 (train 1,050 / valid 100 / test 50) | 500 (350 / 100 / 50) |
+| Unique source images | 500 | 500 |
+| Shared with the other set | all 500 | all 500 |
+| Sources | same 5 `2022_12_7_*` sessions, 100 each | same |
+| Boxes per image | identical to the raw original in every copy | |
+
+Its `README.roboflow.txt` explains the difference: every image was stretched to 640×640, and each training image has 3 augmented versions (salt-and-pepper noise on 5% of pixels). So the 1,050 training images are 350 originals × 3, and valid and test are unchanged.
+
+**Don't use it.** It adds no new cells, sessions, or counts, and because `splits/splits.csv` reassigns the 500 originals, its copies would leak validation and test images into training. If we want noise augmentation, we apply it ourselves at training time. More data has to come from other datasets (see `plan.md` §5.3).
+
+Note: the `universe.roboflow.com/ds/...?key=...` raw URL returns HTTP 403 (Cloudflare check) to scripts. Only `app.roboflow.com/ds/...` export links from our own workspace work with `download_export()`.

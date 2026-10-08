@@ -38,7 +38,8 @@ It differs from a bird app in where the difficulty lies. Bird apps have a few la
 | **Stretch 2** | Test set from a different lab or microscope; warnings for inputs the model can't handle |
 | **Stretch 3** | Density-map model for crowded and blurry images (synthetic dataset); public datasets to teach "what is a cell"; per-lab fine-tuning |
 | **Stretch 4** | Demo app (upload an image → annotated image + counts), e.g. Gradio on Colab |
-| **Out of scope** | Cell types beyond Live/Dead (no labels). CoNIC's 6 nucleus types come from stained tissue slices, a different kind of microscopy; treat it as a separate project. |
+| **Stretch 5** | Medical foundation models (§5.5): MedGemma prompted for counts, a counting head on frozen MedSigLIP features, and optionally LoRA fine-tuning; compared with our detector on our data and on CoNIC |
+| **Out of scope** | Cell types beyond Live/Dead (no labels). CoNIC's 6 nucleus types come from stained tissue slices, a different kind of microscopy; we use CoNIC only for **total nucleus counts** (a dense-scene test and the foundation-model comparison), not for typing. MIDOG++ (mitosis counting) is out of scope. |
 
 ---
 
@@ -47,7 +48,7 @@ It differs from a bird app in where the difficulty lies. Bird apps have a few la
 | Phase | Status | Deliverable |
 |---|---|---|
 | 0. Setup | ✅ Done | `environment.yml`, `src/cellcount/`, `notebooks/00_setup_and_download.ipynb`, `data/README.md` |
-| 1. EDA | ✅ Done, team review pending | `notebooks/01_eda.ipynb`, `splits/splits.csv` |
+| 1. EDA | ✅ Done, team review pending | `notebooks/01_eda.ipynb`, `splits/splits.csv`, [`eda_summary.md`](eda_summary.md) (figures) |
 | 2. Baselines | ⏭️ Next | `notebooks/02_baselines.ipynb`, results table |
 | 3. Core model | Planned | `notebooks/03_detector.ipynb` |
 | 4. Generalization | Planned | stress-test curves, leave-one-session-out results, external test set |
@@ -57,15 +58,16 @@ It differs from a bird app in where the difficulty lies. Bird apps have a few la
 
 ## 3. What the data tells us
 
-From `notebooks/01_eda.ipynb` (full findings in its last section):
+From `notebooks/01_eda.ipynb`; the short version with figures is [`eda_summary.md`](eda_summary.md):
 
 - **500 unique images**, all 640×640, with 26,715 boxes: **Live 25,691 / Dead 1,024 (~4%)**.
-  - The public Roboflow version (~1,200 images) is the same images with augmented copies; don't use it.
+  - The public Roboflow version (~1,200 images) is the same images with augmented copies; don't use it. Verified on 2026-10-06: all 500 originals match, with identical labels, and the 1,050 training images are 350 × 3 copies with salt-and-pepper noise (details in [`dataset_link.md`](dataset_link.md)).
 - **One lab, one day:** every image is from `2022_12_7`. There are only 5 acquisition sessions (`1_A`, `1_B`, `2_A`, `2_B`, `3_A`), 100 frames each.
   - Each session has its own background colour and typical count (means of 37–71 cells).
-  - A model can therefore learn "background → count" instead of counting cells.
+  - A model can therefore learn "background → count" instead of counting cells. **Predicting each image's session mean already gives R² = 0.72.**
 - **Cells are uniform:** about 28 px across, and they barely overlap (0.1% of cells).
   - This set can't test crowded or overlapping cells; that needs the synthetic set.
+- **The usual blur score is confounded:** Laplacian variance correlates r = 0.90 with cell count (more cells, more edges). Test blur by adding it at known strengths, not by ranking images by this score.
 - **Label policy:** faint, out-of-focus cells are often unlabeled, so the model learns the annotator's idea of a countable cell.
 - **The data is smaller than it looks for some methods.** A detector learns from 26,715 labelled cells, but a model that predicts one number per image learns from only 350 training images. This favours detection.
 
@@ -167,6 +169,22 @@ Don't return a confident wrong count. Warn when:
 - the image is very blurry
 - the image is mostly background
 
+### 5.5 Medical foundation models (MedGemma track)
+
+A teammate's proposal: test whether Google's medical foundation models can count cells, and compare them with a specialized counter, using three approaches:
+
+| Approach | What it is | Cost | Expectation on our data |
+|---|---|---|---|
+| **A. Prompting** | Ask MedGemma (4B, image + text) "how many live and dead cells?" | No training; inference only | Weak. Vision-language models are unreliable at counting more than about 10 objects, and we have 23–91 per image. A useful "can a general model just do it?" floor. |
+| **B. Frozen encoder + head** | MedSigLIP image features → small regression head (ridge or MLP), predicting Live and Dead counts | Minutes of training | Likely good on the random split, but at risk of learning the session (R² = 0.72 from the session alone). The leave-one-session-out gap is the real test. A density head on **patch** features is a stronger variant than one on the pooled embedding. |
+| **C. LoRA fine-tuning** | Fine-tune MedGemma to output the counts as text | Hours on a GPU; most engineering | Only worthwhile if A or B shows promise; 351 training images is little for this. Stretch. |
+
+How it fits our project:
+- **It answers a stakeholder question** ("why not just use a big medical AI model?") and gives a strong comparison point for the KPI table, including compute cost per image.
+- **Domain mismatch, in both directions.** MedGemma and MedSigLIP were trained largely on pathology, radiology, and similar images, not brightfield trypan-blue cultures. So on our data they test transfer. CoNIC (histology nuclei) is in-domain for them, and it also gives us the dense, overlapping scenes our data lacks. That makes CoNIC total-count evaluation the natural second benchmark for this track.
+- **Metrics:** the proposal's MAE and RMSE are already in §4. We add per-class errors and viability on our data, and leave-one-session-out results.
+- **Practical:** the models are gated on Hugging Face (accept the Health AI Developer Foundations terms first). A 4B model in bf16 fits in memory on a 48 GB Apple-silicon Mac or a Colab GPU. Approach A needs only inference.
+
 ---
 
 ## 6. Roadmap
@@ -186,12 +204,28 @@ Don't return a confident wrong count. Warn when:
 
 ### Phase 2: Baselines
 
-The cheapest baselines come first, so every later model has something to beat. Every result goes into a single table using the Section 4 metrics.
+The cheapest baselines come first, so every later model has something to beat. Every result goes into **one table** with the §4 metrics, reported on **both** the random split and leave-one-session-out cross-validation from day one. The gap between the two tells us how much each method relies on recognizing the session.
 
-- [ ] Add a `src/cellcount/metrics.py` that computes the Section 4 metrics, so every notebook reports the same numbers.
-- [ ] **Predict the mean count** of the training set. This is the floor, with R² ≈ 0.
-- [ ] **Classical image processing:** background subtraction, Otsu threshold, watershed, then count. Classify Live/Dead by the blue intensity inside each cell. Expect over-counting, because faint cells are unlabeled.
-- [ ] **Pretrained with no training:** Cellpose, counting the masks it finds, plus the colour rule for Live/Dead. This is also the starting point for Stretch 1.
+**Setup**
+- [ ] `src/cellcount/metrics.py`: the §4 metrics (Live, Dead, and Total MAE, viability error, ±10% accuracy, R², RMSE), per session and per count bin.
+- [ ] Leave-one-session-out fold helper built on the `source` column of `splits/splits.csv`.
+- [ ] `notebooks/02_baselines.ipynb` writes `outputs/results/baselines.csv`; one row per method × test level.
+- [ ] Optional dependency group for modeling in `pyproject.toml` (torch, cellpose, transformers), so `src/cellcount/` stays importable without them. Development runs locally (Apple silicon, `mps`); Colab for teammates and final runs.
+
+**Baseline ladder** (in order; each is cheap)
+
+| # | Baseline | Learns from | What it tells us |
+|---|---|---|---|
+| B0 | Training-set mean count | nothing | The floor (R² ≈ 0). |
+| B1 | Session mean count | session label | **Shortcut reference** (R² ≈ 0.72 on the random split; meaningless under leave-one-session-out). Any model near this number may just recognize the session. |
+| B2 | Global image features → ridge regression (edge energy, colour statistics) | 351 images | How far a model gets without finding cells. Edge energy alone tracks count (r = 0.90). |
+| B3 | Classical CV: background subtraction, Otsu threshold, watershed; Live/Dead by blue intensity inside each blob | thresholds tuned on train | A training-free counter. Expect over-counting of faint, unlabelled cells. |
+| B4 | Cellpose zero-shot (pretrained, no training) + the same colour rule | nothing | How well a general cell segmenter transfers. Also the starting point for Stretch 1. |
+| B5 | MedGemma prompting (§5.5 A) | nothing | Whether a medical vision-language model can count. |
+| B6 | MedSigLIP frozen features + ridge or MLP head (§5.5 B) | 351 images | The foundation-model learned baseline; watch the leave-one-session-out gap. |
+
+- [ ] Error analysis for B3, B4, and B6: worst 10 images per method, and residuals by session and count bin.
+- [ ] Short write-up: which baselines beat B1 under leave-one-session-out, and what that implies for Phase 3.
 
 ### Phase 3: Core model (Live/Dead detector)
 
@@ -211,6 +245,9 @@ The cheapest baselines come first, so every later model has something to beat. E
 - [ ] Stress-test curves (§4): scale, shape, blur, colour, and noise.
 - [ ] *Stretch 1:* Cellpose plus colour classifier vs the trained detector, on all three test levels.
 - [ ] *Stretch 2:* collect and label an external test set from another lab; add the warnings from §5.4.
+- [ ] *Stretch 5 (§5.5):*
+  - CoNIC total-nucleus counts: B4 (Cellpose), B5, B6, and our detector, if boxes can be derived from the masks.
+  - MedGemma LoRA fine-tuning (approach C), only if B5 or B6 is competitive.
 - [ ] *Stretch 3:*
   - Synthetic Cell Images and Masks: error against blur level, and crowded scenes.
   - A density-map model (U-Net or CSRNet style) for crowded images, compared with the detector.
@@ -259,3 +296,6 @@ outputs/         # gitignored; figures, checkpoints, results (on Drive when usin
 - [ ] Can anyone get 20–30 images from another lab or microscope for the external test set?
 - [ ] Who owns which phase or task?
 - [ ] Agree on the branch and pull-request rules (Section 7).
+- [ ] Adopt the MedGemma track (§5.5) as Stretch 5, with B5 and B6 in the Phase 2 baselines? Who requests Hugging Face access?
+- [ ] CoNIC: use it for total-count evaluation only (proposed), or drop it?
+- [ ] Headline numbers: report leave-one-session-out as the main result and the random split as secondary (proposed)?
