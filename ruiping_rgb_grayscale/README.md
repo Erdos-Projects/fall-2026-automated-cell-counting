@@ -10,6 +10,8 @@ For a short overview, start with the [one-page Week 5 check-in PDF](docs/weekly_
 
 The [meeting script and evidence guide](docs/meeting_guide.md) follows the talking points with direct links to the supporting tables, figures, configuration, and code.
 
+The [experiment notebook with recorded outputs](notebooks/rgb_grayscale_ablation.ipynb) includes the completed run's GPU information, data checks, RGB and grayscale training logs, evaluation tables, and embedded figures. These outputs are from the saved run; no training was repeated to prepare this version. Console color codes and decorative symbols were removed for readability. Numerical results, execution counts, and image outputs were retained.
+
 ## Experiment
 
 - Source: Roboflow `ruiping-huang/cell-counting-zeqo5-ncyud`, Version 1, YOLO26 export.
@@ -32,7 +34,7 @@ The [meeting script and evidence guide](docs/meeting_guide.md) follows the talki
 | [`results/`](results/) | Comparison, paired predictions, training curves/history, validation grids, and provenance |
 | [`splits/splits.csv`](splits/splits.csv) | Local copy of the team's frozen image-level manifest |
 | [`requirements.txt`](requirements.txt) | Direct dependencies for the experiment |
-| [`scripts/build_notebook.py`](scripts/build_notebook.py) | Rebuilds the notebook with cleared outputs |
+| [`scripts/build_notebook.py`](scripts/build_notebook.py) | Rebuilds the notebook while preserving recorded outputs if code is unchanged; `--clear-outputs` explicitly creates a code-only version |
 | [`scripts/analyze_completed_run.py`](scripts/analyze_completed_run.py) | Source summaries, verified supplementary inference, and illustrative box comparisons; no training |
 | [`scripts/build_checkin_pdf.py`](scripts/build_checkin_pdf.py) | Render the check-in Markdown as a one-page PDF |
 
