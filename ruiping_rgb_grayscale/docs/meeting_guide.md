@@ -60,4 +60,4 @@ Evidence: [training and stopping](results_report.md#training-and-validation-sele
 
 ## Code and reproducibility
 
-The [contribution README](../README.md) describes the files and diagnostic reproduction command. The source notebook has cleared outputs for review. Full execution logs, checkpoints, and dataset directories are retained separately; the reviewed result tables, training records, figures, and configuration are included here. A Roboflow credential is supplied at runtime through a Colab secret or hidden prompt.
+The [contribution README](../README.md) describes the files and diagnostic reproduction command. The [experiment notebook](../notebooks/rgb_grayscale_ablation.ipynb) includes recorded GPU information, training logs, evaluation tables, and embedded figures from the completed run. Console formatting was normalized for readability, without changing numerical results or image outputs. The original unmodified execution archive, checkpoints, and dataset directories are retained separately. A Roboflow credential is supplied at runtime through a Colab secret or hidden prompt.
