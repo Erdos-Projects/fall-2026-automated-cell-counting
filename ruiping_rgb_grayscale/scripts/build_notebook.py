@@ -1,4 +1,5 @@
-"""Build the experiment notebook with cleared outputs."""
+"""Build the experiment notebook and preserve recorded outputs when code is unchanged."""
+import argparse
 import ast
 import json
 from pathlib import Path
@@ -435,5 +436,21 @@ notebook = dict(cells=cells, metadata=dict(kernelspec=dict(display_name='Python 
                  language='python', name='python3'), language_info=dict(name='python')),
                 nbformat=4, nbformat_minor=5)
 path = ROOT / 'notebooks/rgb_grayscale_ablation.ipynb'
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--clear-outputs', action='store_true', help='Explicitly build a code-only notebook')
+options = parser.parse_args()
+if path.exists() and not options.clear_outputs:
+    previous = json.loads(path.read_text())
+    old_code = [c for c in previous['cells'] if c['cell_type'] == 'code']
+    new_code = [c for c in notebook['cells'] if c['cell_type'] == 'code']
+    if any(c.get('outputs') or c.get('execution_count') is not None for c in old_code):
+        signatures = lambda cs: [ast.dump(ast.parse(''.join(c['source']))) for c in cs]
+        if signatures(old_code) != signatures(new_code):
+            raise RuntimeError('Recorded outputs belong to different code. Preserve this notebook before using --clear-outputs.')
+        for old, new in zip(old_code, new_code):
+            new['outputs'] = old.get('outputs', [])
+            new['execution_count'] = old.get('execution_count')
+        if 'execution_provenance' in previous.get('metadata', {}):
+            notebook['metadata']['execution_provenance'] = previous['metadata']['execution_provenance']
 path.write_text(json.dumps(notebook, ensure_ascii=False, indent=1))
 print(path)
