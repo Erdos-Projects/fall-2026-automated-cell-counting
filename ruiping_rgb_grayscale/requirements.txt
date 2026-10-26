@@ -1,0 +1,12 @@
+roboflow==1.7.1
+ultralytics==8.4.183
+albumentations==2.0.8
+torch>=2.0
+numpy>=1.26
+pandas>=2.2
+Pillow>=10.0
+PyYAML>=6.0
+matplotlib>=3.8
+scipy>=1.11
+reportlab>=4.0
+pypdf>=5.0

@@ -1,0 +1,27 @@
+{
+  "created_at": "2026-10-26T05:38:40.799405+00:00",
+  "purpose": "Post-hoc descriptive diagnostics; no training or threshold selection",
+  "device": "cpu",
+  "torch": "2.11.0",
+  "ultralytics": "8.4.183",
+  "original_run": "rgb_grayscale_seed0_20261026T040157Z",
+  "paired_counts_sha256": "2344955a8ebd06d74359bcd6523b254e7e32c53af3df39a3114301f9205d5171",
+  "manifest_sha256": "b6f0cae5b41154d5d4b35239e662667260393ac8c01bfb909d7e252fd3fdfeb0",
+  "reference_box_provenance": "Local Version 1 COCO annotations converted to YOLO boxes in the cached prepared dataset. All 75 decoded image hashes match the formal run; reference counts match the frozen manifest. Reference coordinates have not been compared directly with the formal Roboflow YOLO export. Matching is illustrative, not a new test detection benchmark.",
+  "decoded_image_hashes_verified": 75,
+  "box_matching_iou": 0.5,
+  "arms": {
+    "rgb": {
+      "checkpoint_sha256": "d11234eef0ca0a9f6788385e26e15f9143df70916a7afdb6d3539d8a99057105",
+      "confidence_threshold": 0.44,
+      "matching_saved_counts": 75,
+      "mismatch_count": 0
+    },
+    "grayscale": {
+      "checkpoint_sha256": "a7b12efcc75ff0e207f720996f2bee5da1cfe1374ad1bbbec5d6659503848c8d",
+      "confidence_threshold": 0.33,
+      "matching_saved_counts": 75,
+      "mismatch_count": 0
+    }
+  }
+}
