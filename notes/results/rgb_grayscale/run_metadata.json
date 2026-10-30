@@ -1,0 +1,75 @@
+{
+  "run_id": "rgb_grayscale_seed0_20261026T040157Z",
+  "status": "complete",
+  "source": {
+    "workspace": "ruiping-huang",
+    "project": "cell-counting-zeqo5-ncyud",
+    "version": 1,
+    "export_format": "yolo26"
+  },
+  "frozen_manifest_commit": "b646a2eadb6ea4419e87c8f65b4c108d437a8861",
+  "manifest_sha256": "b6f0cae5b41154d5d4b35239e662667260393ac8c01bfb909d7e252fd3fdfeb0",
+  "split_counts": {
+    "train": 351,
+    "val": 74,
+    "test": 75
+  },
+  "classes": [
+    "Cell"
+  ],
+  "training": {
+    "epochs": 100,
+    "imgsz": 640,
+    "single_cls": true,
+    "seed": 0,
+    "batch": 16,
+    "device": 0,
+    "plots": true,
+    "deterministic": true,
+    "patience": 20,
+    "workers": 2,
+    "hsv_h": 0.0,
+    "hsv_s": 0.0,
+    "hsv_v": 0.0,
+    "bgr": 0.0,
+    "fliplr": 0.5,
+    "flipud": 0.5,
+    "translate": 0.0,
+    "scale": 0.0,
+    "degrees": 0.0,
+    "shear": 0.0,
+    "perspective": 0.0,
+    "mosaic": 0.0,
+    "close_mosaic": 0,
+    "mixup": 0.0,
+    "cutmix": 0.0,
+    "copy_paste": 0.0,
+    "augmentations": [
+      {
+        "__version__": "2.0.8",
+        "transform": {
+          "__class_fullname__": "RandomRotate90",
+          "p": 1.0
+        }
+      }
+    ]
+  },
+  "grayscale": "PIL luminance conversion replicated across three channels",
+  "gpu": "Tesla T4",
+  "python": "3.13.16 (main, Oct  1 2026, 15:40:24) [GCC 13.3.0]",
+  "versions": {
+    "torch": "2.11.0+cu130",
+    "ultralytics": "8.4.183",
+    "roboflow": "1.7.1",
+    "albumentations": "2.0.8",
+    "numpy": "2.1.3",
+    "pandas": "2.2.3",
+    "Pillow": "11.3.0"
+  },
+  "completed_arms": [
+    "rgb",
+    "grayscale"
+  ],
+  "initial_weights_sha256": "9b09cc8bf347f0fc8a5f7657480587f25db09b34bf33b0652110fb03a8ad4fef",
+  "timing_scope": "Image loading, preprocessing, inference, and postprocessing; model loading and offline grayscale conversion excluded. Validation inference precedes timing."
+}

@@ -1,0 +1,7 @@
+uid,file_name,original_key,reference_count,rgb_count,grayscale_count,rgb_error,grayscale_error,source,split,count,rgb_abs,gray_abs,selection_score,category,title
+train/177,train_177,2022_12_7_3_A-creport_694,65,61,56,-4,-9,2022_12_7_3_A,test,65,4,9,9.0,largest_grayscale_error,Largest grayscale count error
+train/258,train_258,2022_12_7_1_B-creport_251,67,67,62,0,-5,2022_12_7_1_B,test,67,0,5,5.0,rgb_exact_grayscale_under,RGB exact; grayscale undercount
+valid/67,valid_67,2022_12_7_1_B-creport_247,58,54,57,-4,-1,2022_12_7_1_B,test,58,4,1,3.0,grayscale_better,Grayscale closer to reference
+train/207,train_207,2022_12_7_1_A-creport_221,44,48,49,4,5,2022_12_7_1_A,test,44,4,5,9.0,both_overcount,Both models overcount
+train/243,train_243,2022_12_7_1_B-creport_261,61,58,57,-3,-4,2022_12_7_1_B,test,61,3,4,7.0,both_undercount,Both models undercount
+valid/7,valid_7,2022_12_7_1_A-creport_140,56,56,56,0,0,2022_12_7_1_A,test,56,0,0,-3.4399999999999977,both_exact,Both counts exact
