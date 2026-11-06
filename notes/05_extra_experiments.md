@@ -52,7 +52,26 @@ The question is how far "find round objects and count them" carries beyond micro
 
 ### Results
 
-The notebook is saved without its outputs, so this note describes the setup only. Running it on Colab needs the Roboflow workspace and project names as Colab secrets (`ROBOFLOW_WORKSPACE`, `ROBOFLOW_PROJECT_CELL`, `ROBOFLOW_PROJECT_BLOOD`, `ROBOFLOW_PROJECT_TOMATO`, `ROBOFLOW_PROJECT_EGG`).
+| Dataset | Status | True count per image (mean) | Precision | Recall | mAP50 | Count MAE | Count R² |
+|---|---|---|---|---|---|---|---|
+| **Our cells** | Trained | 52.56 | 0.966 | 0.981 | 0.991 | 1.6 | 0.98 |
+| Blood cells | Applied without retraining | 13.08 | 0.154 | 0.178 | 0.061 | 12.11 | −6.09 |
+| Tomatoes | Applied without retraining | 5.47 | 0.010 | 0.057 | 0.001 | 5.29 | −1.34 |
+| Eggs | Applied without retraining | 2.73 | 0.000 | 0.000 | 0.000 | 2.73 | −8.04 |
+
+The "Our cells" row gives our model's scores on our own images: count MAE and R² on the 75 test images ([`04_yolo_performance.md`](04_yolo_performance.md)), and precision, recall and mAP50 on the validation images ([`03_yolo_training.md`](03_yolo_training.md)). The other rows apply the cell model trained in notebook 05b, with the same recipe, to each dataset without retraining.
+
+![Five example predictions per dataset](figures/extra_experiments/all_datasets_5_samples.png)
+
+*Five example images per dataset, with the boxes the cell model found.*
+
+**What this shows.**
+- **Blood cells** (microscope images: many objects, round stained cells, a moderately busy background). Even though they are cells too, the different stain colour drops mAP50 to 0.061, and the count is off by 12 cells per image (R² −6.1).
+- **Tomatoes** (outdoor photos: shadows, green and red fruit, leaves behind them). The model fails almost completely (mAP50 0.001): natural scenes hold too much that doesn't look like our training images.
+- **Eggs** (large oval objects on a household background). The objects are far larger than our cells, and the model finds no eggs at all, so the count error equals the true count (MAE 2.73).
+- So the model has learned what our cells look like, at their size and colour. Other objects, even other cells, need training images of their own.
+
+The notebook is saved without its outputs. Running it on Colab needs the Roboflow workspace and project names as Colab secrets (`ROBOFLOW_WORKSPACE`, `ROBOFLOW_PROJECT_CELL`, `ROBOFLOW_PROJECT_BLOOD`, `ROBOFLOW_PROJECT_TOMATO`, `ROBOFLOW_PROJECT_EGG`).
 
 ## Expanding the impact
 

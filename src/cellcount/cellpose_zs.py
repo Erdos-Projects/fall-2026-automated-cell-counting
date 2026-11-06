@@ -1,4 +1,4 @@
-"""Zero-shot Cellpose-SAM baseline (models B2 and B3: default and tuned settings): segment every cell with the published model, then count.
+"""Zero-shot Cellpose-SAM baseline (models B1 and B2: default and tuned settings): segment every cell with the published model, then count.
 
 The network is never trained on our images. Three numbers are chosen on **training images only**
 (``tune``): the two mask thresholds Cellpose exposes (``cellprob_threshold``, ``flow_threshold``)

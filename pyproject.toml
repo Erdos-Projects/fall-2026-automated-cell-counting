@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cellcount"
-version = "0.1.0"
-description = "Utilities for the Cell Image Counting project (data loading, EDA, splits)."
+version = "1.0.0"
+description = "Utilities for the Cell Image Counting project (data loading, EDA, splits, baselines, YOLO26n training and evaluation)."
 requires-python = ">=3.10"
 # Lower bounds only, so Colab's preinstalled packages are reused instead of reinstalled.
 dependencies = [

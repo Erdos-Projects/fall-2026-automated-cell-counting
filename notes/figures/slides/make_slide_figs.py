@@ -86,7 +86,7 @@ print("fig2", {k: round(float((v.reindex(t.index) - t).abs().mean()), 2) for k, 
 
 # --- Figure 3: MAE, random split vs unseen session ---------------------------------------
 res = pd.read_csv(paths.outputs / "results" / "baseline_cellpose.csv")
-methods = {"B1 session mean": "Session-average\nshortcut", "B3 Cellpose-SAM (tuned on train)": "Cellpose-SAM\n(tuned)"}
+methods = {"B0 session mean": "Session-average\nshortcut", "B2 Cellpose-SAM (tuned on train)": "Cellpose-SAM\n(tuned)"}
 levels = {"random split": ("Seen sessions (test split)", S1), "leave-one-session-out": ("Unseen session", S2)}
 fig, ax = plt.subplots(figsize=(10, 6))
 x, w = np.arange(len(methods)), 0.36

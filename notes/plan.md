@@ -8,7 +8,7 @@ One row per weekly check-in. Scope, data and KPIs are in [`project.md`](project.
 |---|---|---|---|
 | 1 | Scope, data sources, stakeholders, KPIs | [`project.md`](project.md) | ✅ Done |
 | 2 | EDA and preprocessing | [`01_eda_overview.ipynb`](../notebooks/01_eda_overview.ipynb), the shared split [`splits.csv`](../splits/splits.csv), [`00_data.md`](00_data.md) | ✅ Done |
-| 3 | Model architecture: baseline and deep learning | Baselines B0/B1 (references) and B2/B3 Cellpose-SAM (default / tuned on train; B3 is the baseline), then our own model: YOLO26n trained on our boxes ([`02_baseline_explained.md`](02_baseline_explained.md)) | ✅ Done |
+| 3 | Model architecture: baseline and deep learning | Baseline B0 (session mean, reference) and B1/B2 Cellpose-SAM (default / tuned on train; B2 is the baseline), then our own model: YOLO26n trained on our boxes ([`02_baseline_explained.md`](02_baseline_explained.md)) | ✅ Done |
 | 4 | Baseline performance | [`02_baseline_cellpose.ipynb`](../notebooks/02_baseline_cellpose.ipynb), [`02_baseline_results.md`](02_baseline_results.md) | ✅ Done |
 | 5 | Deep-learning model, iteration 1 | Our model, YOLO26n, trained with default settings and scored like the baseline: MAE 1.6 vs 5.6 cells per image ([`03_yolo_training.md`](03_yolo_training.md), [`04_yolo_performance.md`](04_yolo_performance.md)) | ✅ Done |
 | 6 | Deep-learning model, iteration 2 | YOLO26n tested one change at a time: augmentation screen and RGB vs grayscale ([`03_yolo_training.md`](03_yolo_training.md), [`03a_rgb_grayscale_results.md`](03a_rgb_grayscale_results.md)), and applied to other datasets ([`05_extra_experiments.md`](05_extra_experiments.md)) | ✅ Done |

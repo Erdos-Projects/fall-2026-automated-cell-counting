@@ -71,7 +71,7 @@ IDs such as `train_177` retain a prefix from the original Roboflow export. Their
 
 This is one training seed on the team's fixed random split. The observed result favors RGB for this run, but it does not establish a universal color advantage, significance across training seeds, or generalization to new acquisition sessions. The two arms stopped at different epochs under the same rule, and stochastic training variability remains. Matching original names and counts does not establish pixel/coordinate equality with an unavailable team raw export. Historical team model results also require checking split, augmentation, and evaluation compatibility before comparison.
 
-No settings were changed after inspecting the test results. Repeated-seed, equal-budget, or session-held-out comparisons would be separate follow-up studies.
+No settings were changed after inspecting the test results. Repeated-seed, equal-budget, or session-held-out comparisons are outside the scope of this project.
 
 ## Files and verification
 

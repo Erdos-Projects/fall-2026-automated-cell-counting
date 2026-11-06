@@ -15,13 +15,13 @@ Week 4 of [`plan.md`](plan.md): how the baseline model performs. [`02_baseline_e
 
 ## Task and baseline
 
-**Task: the total number of cells in an image.** We count cells without telling Live from Dead, because most other cell datasets (the synthetic blur set, CoNIC) have no viability labels. Telling cell types apart (Live vs Dead here, or several kinds of cells in other datasets) is a later extension of the project. The colour rule for Live/Dead is kept in `cellpose_zs.py` for that.
+**Task: the total number of cells in an image.** We count cells without telling Live from Dead, because most other cell datasets (the synthetic blur set, CoNIC) have no viability labels. Counting Live and Dead separately is outside this project's scope. The colour rule for Live/Dead is kept in `cellpose_zs.py`.
 
 | | Role | What it is | Uses our labels? |
 |---|---|---|---|
-| B0, B1 | Sanity references | B0 predicts the training-set mean count. B1 predicts the mean count of the image's session. | Counts only |
-| B2 Cellpose-SAM, default settings | Published model as shipped | A published cell-segmentation model (`cpsam_v2`) used **as downloaded**: its network is never trained on our images. It outlines every cell, and we count the outlines. | No |
-| **B3 Cellpose-SAM, tuned on train** | **Baseline model.** Later models are measured against it. | The same model, with its two post-processing thresholds and a minimum cell area chosen on the training images | Only to choose those three numbers |
+| B0 | Sanity reference | Predicts the training mean count of the image's session. | Counts only |
+| B1 Cellpose-SAM, default settings | Published model as shipped | A published cell-segmentation model (`cpsam_v2`) used **as downloaded**: its network is never trained on our images. It outlines every cell, and we count the outlines. | No |
+| **B2 Cellpose-SAM, tuned on train** | **Baseline model.** Later models are measured against it. | The same model, with its two post-processing thresholds and a minimum cell area chosen on the training images | Only to choose those three numbers |
 
 Models are numbered in the order we test them.
 
@@ -41,18 +41,18 @@ The Cellpose network gives two maps for every pixel. Two thresholds then decide 
    - **Higher is more lenient:** irregular or faint outlines survive. Too high and fragments and merged blobs are kept.
 3. **Minimum area** (not a Cellpose setting; ours **400 px**). We add this filter after Cellpose to drop debris and small fragments. Cellpose's own minimum is 15 px.
 
-**Default (B2) vs tuned on train (B3)**
+**Default (B1) vs tuned on train (B2)**
 - **Default settings** (0, 0.4, no area filter) are Cellpose exactly as shipped. They are strict, which suits the crisp, high-contrast images Cellpose was mostly trained on.
-- **Tuned on train** (B3) means we tried 15 threshold pairs (`cellprob` 0, −2, −4, −6, −8 × `flow` 0.4, 0.7, 1.0). For each pair we also chose the minimum area (0–600 px) that minimizes count error. The combination with the lowest count error on the **351 training images** won: **−4, 1.0, 400 px**.
+- **Tuned on train** (B2) means we tried 15 threshold pairs (`cellprob` 0, −2, −4, −6, −8 × `flow` 0.4, 0.7, 1.0). For each pair we also chose the minimum area (0–600 px) that minimizes count error. The combination with the lowest count error on the **351 training images** won: **−4, 1.0, 400 px**.
 - Validation and test images played no part in the choice, and the network's weights never change. This is a grid search over post-processing parameters, not training.
 
 ## Headline
 
-**Off-the-shelf Cellpose-SAM (B3) counts within 5.6 cells per image**, about 11% of a typical image's 53 cells, without being trained on our cells.
+**Off-the-shelf Cellpose-SAM (B2) counts within 5.6 cells per image**, about 11% of a typical image's 53 cells, without being trained on our cells.
 - Its counts are unbiased on average (−0.6 cells), and 59% of test images are within ±10%. R² is 0.74.
-- It beats the session shortcut (B1: MAE 6.9, R² 0.71), which predicts each session's average count without looking at any cells.
-- **Its settings matter a lot:** with Cellpose's own defaults (B2) it finds only a third of the cells (MAE 34.8).
-- **It holds up on unseen sessions:** MAE 6.3 under leave-one-session-out, while the session shortcut B1 collapses to 14.6.
+- It beats the session shortcut (B0: MAE 6.9, R² 0.71), which predicts each session's average count without looking at any cells.
+- **Its settings matter a lot:** with Cellpose's own defaults (B1) it finds only a third of the cells (MAE 34.8).
+- **It holds up on unseen sessions:** MAE 6.3 under leave-one-session-out, while the session shortcut B0 collapses to 14.6.
 - It misses pale, faint cells, and it takes 1.85 s per image.
 
 ## 1. Results
@@ -61,10 +61,9 @@ The Cellpose network gives two maps for every pixel. Two thresholds then decide 
 
 | | Total MAE | Bias | RMSE | Relative error | Within ±10% | R² | Precision / recall (IoU ≥ 0.5) | Precision / recall (IoU ≥ 0.3) | s / image |
 |---|---|---|---|---|---|---|---|---|---|
-| B0 training mean | 12.7 | +1.1 | 14.9 | 28% | 24% | −0.01 | — | — | — |
-| B1 session mean (shortcut) | 6.9 | +1.7 | 8.1 | 14% | 45% | 0.71 | — | — | — |
-| B2 Cellpose-SAM, default settings (0, 0.4, no area filter) | 34.8 | −34.6 | 39.8 | 66% | 9% | −6.21 | 0.95 / 0.32 | 0.96 / 0.33 | 1.85 |
-| **B3 Cellpose-SAM (baseline, tuned on train)** | **5.6** | **−0.6** | **7.5** | **11%** | **59%** | **0.74** | 0.65 / 0.64 | **0.91 / 0.90** | **1.85** |
+| B0 session mean (shortcut) | 6.9 | +1.7 | 8.1 | 14% | 45% | 0.71 | — | — | — |
+| B1 Cellpose-SAM, default settings (0, 0.4, no area filter) | 34.8 | −34.6 | 39.8 | 66% | 9% | −6.21 | 0.95 / 0.32 | 0.96 / 0.33 | 1.85 |
+| **B2 Cellpose-SAM (baseline, tuned on train)** | **5.6** | **−0.6** | **7.5** | **11%** | **59%** | **0.74** | 0.65 / 0.64 | **0.91 / 0.90** | **1.85** |
 
 **How to read the columns**
 - MAE is the mean absolute error in cells per image: the average of |predicted − true|. Overcounts and undercounts don't cancel.
@@ -81,17 +80,17 @@ The three numbers are chosen on 4 sessions and tested on the 5th, five times, an
 
 | | Total MAE | Bias | Within ±10% | R² |
 |---|---|---|---|---|
-| B0 / B1 (unseen session: both fall back to the training mean) | 14.6 | 0.0 | 20% | −0.40 |
-| **B3 Cellpose-SAM (tuned on train)** | **6.3** | **−1.1** | **62%** | **0.58** |
+| B0 session mean (unseen session: falls back to the training mean) | 14.6 | 0.0 | 20% | −0.40 |
+| **B2 Cellpose-SAM (tuned on train)** | **6.3** | **−1.1** | **62%** | **0.58** |
 
 ![Random split vs leave-one-session-out](figures/baseline/04_random_vs_loso.png)
 
-- B3 loses a little on unseen sessions (MAE 5.6 → 6.3). B1 loses everything (6.9 → 14.6), because it has no average for a session it has never seen.
-- B3 is worst when session 3_A is held out (MAE 9.1, undercounting by 6.8 on average) and overcounts 1_B (+5.1).
+- B2 loses a little on unseen sessions (MAE 5.6 → 6.3). B0 loses everything (6.9 → 14.6), because it has no average for a session it has never seen.
+- B2 is worst when session 3_A is held out (MAE 9.1, undercounting by 6.8 on average) and overcounts 1_B (+5.1).
 
 ## 2. Diagnostics
 
-**Predicted vs true counts** (test set, coloured by session). B1 predicts one number per session. B2 (Cellpose defaults) sits far below the diagonal. B3 (tuned) follows the diagonal but scatters, with its largest misses below it.
+**Predicted vs true counts** (test set, coloured by session). B0 predicts one number per session. B1 (Cellpose defaults) sits far below the diagonal. B2 (tuned) follows the diagonal but scatters, with its largest misses below it.
 
 As identified in the EDA, our datasets were taken in 5 different sessions.
 
@@ -115,7 +114,7 @@ As identified in the EDA, our datasets were taken in 5 different sessions.
 
 ## 3. Where the baseline works and where it doesn't
 
-### B2, Cellpose default settings: worst 6 test images
+### B1, Cellpose default settings: worst 6 test images
 
 ![Cellpose default settings, worst test images](figures/baseline/06_worst_cellpose_default.png)
 
@@ -145,7 +144,7 @@ The worst default image (82 labelled cells) under four settings, with no area fi
 - Neither change alone is enough. Loosening `cellprob` adds faint pixels, but the strict flow check still throws most of the resulting outlines away. Loosening `flow` keeps more outlines, but too few pixels pass the cell-probability cut-off.
 - With both loosened, Cellpose finds nearly all the cells, plus some fragments (90 found vs 82 labelled). The 400 px minimum area then removes those.
 
-### B3, tuned on train: worst 6 test images
+### B2, tuned on train: worst 6 test images
 
 ![Cellpose worst test images](figures/baseline/05_worst_cellpose.png)
 
@@ -162,16 +161,16 @@ The worst default image (82 labelled cells) under four settings, with no area fi
 - **Default settings.** As shipped, Cellpose finds a third of the cells, mostly the dark-blue ones. The baseline depends on adapting two thresholds to our images.
 - **Speed.** 1.85 s per image, because of its large ViT backbone.
 
-### B0 / B1 (references)
+### B0 (reference)
 
-- **B1 confirms the shortcut from the EDA.** Knowing only the session gives R² 0.71 on the random split.
+- **B0 confirms the shortcut from the EDA.** Knowing only the session gives R² 0.71 on the random split.
 - Cellpose clears this bar (R² 0.74 vs 0.71, MAE 5.6 vs 6.9) without any information about sessions.
 
 ## 4. Compute (KPI)
 
 | | Download | Training | Inference |
 |---|---|---|---|
-| B2 / B3 Cellpose-SAM | 1.2 GB weights | none (three numbers chosen on train from cached outputs, about 30 s per threshold pair) | 1.85 s / image |
+| B1 / B2 Cellpose-SAM | 1.2 GB weights | none (three numbers chosen on train from cached outputs, about 30 s per threshold pair) | 1.85 s / image |
 
 Counting a 54-cell image by hand takes on the order of a minute, so Cellpose is roughly 30× faster than a person.
 
@@ -196,7 +195,7 @@ pip install -e ".[dev,model]"   # the "model" extra = torch, torchvision, ultral
 - **Versions used:** Python 3.12, torch 2.14.1 (Apple GPU through `mps`), cellpose 4.2.1.
 - **On Colab:** use a GPU runtime. torch is preinstalled, so `pip install cellpose` is enough, and the device becomes `cuda`.
 
-### B2 / B3 Cellpose-SAM: download and run (no training)
+### B1 / B2 Cellpose-SAM: download and run (no training)
 
 1. **Download the pre-trained model.** The first call to `CellposeModel(pretrained_model="cpsam_v2")` downloads the published Cellpose-SAM weights (`cpsam_v2`, June 2026 release, 1.2 GB) to `~/.cellpose/models/`. See the [Cellpose docs](https://cellpose.readthedocs.io/en/latest/models.html) and the [Cellpose-SAM preprint](https://www.biorxiv.org/content/10.1101/2025.04.28.651001).
 2. **Run the network once per image.**
@@ -220,9 +219,9 @@ pip install -e ".[dev,model]"   # the "model" extra = torch, torchvision, ultral
 4. **Choose the settings on the training images.** For each of the 15 threshold pairs, fit the minimum area (0–600 px) that minimizes total-count MAE on the training images. Keep the pair with the lowest MAE (`cellpose_zs.tune`).
 5. **Count** the cells of at least 400 px in each test image.
 
-### B0 / B1
+### B0
 
-These need no download. B0 predicts the training-set mean count for every image. B1 predicts the training mean of the image's session.
+This needs no download. B0 predicts the training mean of the image's session.
 
 ### Evaluation
 

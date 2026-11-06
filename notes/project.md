@@ -25,6 +25,6 @@ Counting cells in microscopy images is still mostly done by hand, which is slow 
 |---|---|---|---|
 | Count accuracy | Mean absolute error in cells per image; share of images within ±10% | 5.6 cells; 59% | **1.6 cells; 96%** |
 | R² | Variance in true counts that the predictions explain | 0.74 | **0.98** |
-| Compute | Seconds per image, compared with counting by hand (about 1 minute) | 1.85 s | **0.02 s** |
+| Compute | Time per image, compared with counting by hand (about 1 minute) | 1.8 s | **28.6 ms** (about 63× faster) |
 
 All on the same 75 test images. Details: [`02_baseline_results.md`](02_baseline_results.md), [`04_yolo_performance.md`](04_yolo_performance.md). Roadmap: [`plan.md`](plan.md).

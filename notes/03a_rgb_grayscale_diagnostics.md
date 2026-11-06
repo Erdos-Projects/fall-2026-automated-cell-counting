@@ -63,8 +63,8 @@ RGB predicts the correct total of 67 on `train_258`, but has 2 unmatched referen
 
 On `valid_67`, grayscale is closer in total count, 57 versus reference 58, while RGB predicts 54. Grayscale has 4 unmatched references and 3 unmatched predictions, compared with 5 and 1 for RGB. The better total does not imply uniformly better localization or fewer unmatched predictions. Across all test images, grayscale has lower absolute count error on 17, equal error on 27, and higher error on 31.
 
-## Implications for the next iteration
+## Implications
 
-Retain RGB as the current reference configuration. Review ambiguous and border annotations with the team, and agree on an explicit detection evaluation rule alongside count MAE. Repeated seeds or a fixed-epoch comparison would test training variability or budget effects separately. Any training changes should be selected using validation data. Follow-up results on the already-inspected test set should be identified as exploratory.
+RGB remains the reference configuration. Reviewing ambiguous and border annotations, repeated seeds and fixed-epoch comparisons are outside the scope of this project.
 
 The [selected cases](results/rgb_grayscale/diagnostics/selected_cases.csv), [illustrative box matches](results/rgb_grayscale/diagnostics/illustrative_box_matches.csv), and [verification record](results/rgb_grayscale/diagnostics/verification.json) accompany these figures. The [diagnostics module](../src/cellcount/rgb_grayscale_diagnostics.py) reproduces the summaries and figures from the completed checkpoints and prepared data; it does not call training. Regenerated files go to ignored outputs rather than overwriting these published figures or tables. See the results report for the command and required external artifacts.
